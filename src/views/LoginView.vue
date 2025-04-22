@@ -39,7 +39,10 @@ const handleLogin = async () => {
         })
 
         localStorage.setItem('token', data.data.token)
-        router.push({ name: 'home' })
+
+        localStorage.setItem('success_message', 'Login successful');
+
+        return router.push({ name: 'dashboard' })
     } catch (error) {
         const errors = error?.response?.data?.errors || {}
         const unverified = error?.response?.data?.data?.unverified
@@ -55,7 +58,7 @@ const handleLogin = async () => {
         formData.password = ''
         captchaBoxRef.value?.resetCaptcha()
         hcaptchaToken.value = null
-    } finally {
+
         isLoading.value = false
     }
 }

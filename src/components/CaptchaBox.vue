@@ -1,5 +1,5 @@
 <script setup>
-import { ref, defineProps, defineEmits, defineExpose } from 'vue'
+import { ref } from 'vue'
 import VueHcaptcha from '@hcaptcha/vue3-hcaptcha'
 
 defineProps({
