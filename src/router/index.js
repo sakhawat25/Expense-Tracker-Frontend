@@ -6,6 +6,7 @@ import VerifyEmailView from '@/views/VerifyEmailView.vue'
 import ResendVerificationView from '@/views/ResendVerificationView.vue'
 import DashboardView from '@/views/DashboardView.vue'
 import { useAuthStore } from '@/stores/auth'
+import ExpensesView from '@/views/ExpensesView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -19,6 +20,14 @@ const router = createRouter({
       path: '/dashboard',
       name: 'dashboard',
       component: DashboardView,
+      meta: {
+        requiresAuth: true,
+      }
+    },
+    {
+      path: '/expenses',
+      name: 'expenses',
+      component: ExpensesView,
       meta: {
         requiresAuth: true,
       }

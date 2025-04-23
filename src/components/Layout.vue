@@ -1,8 +1,10 @@
 <script setup>
 import { onMounted } from 'vue'
 import { toast } from 'vue3-toastify'
-import { RouterLink } from 'vue-router'
+import { RouterLink, useRoute } from 'vue-router'
 import 'vue3-toastify/dist/index.css'
+
+const route = useRoute()
 
 const showSuccessAlert = (message) => {
     toast(message, {
@@ -33,9 +35,16 @@ onMounted(() => {
             </RouterLink>
 
             <nav class="mt-6">
-                <RouterLink :to="{ name: 'dashboard' }" class="block py-2 px-4 rounded bg-indigo-500">Dashboard
+                <RouterLink :to="{ name: 'dashboard' }" :class="['block py-2 px-4 rounded',
+                    route.name === 'dashboard' ? 'bg-indigo-500' : 'hover:bg-indigo-500'
+                ]">Dashboard
                 </RouterLink>
-                <a href="expenses.html" class="block py-2 px-4 mt-2 hover:bg-indigo-500">Expenses</a>
+
+                <RouterLink :to="{ name: 'expenses' }" :class="['block py-2 px-4 rounded',
+                    route.name === 'expenses' ? 'bg-indigo-500' : 'hover:bg-indigo-500'
+                ]">Expenses
+                </RouterLink>
+
                 <a href="reports.html" class="block py-2 px-4 mt-2 hover:bg-indigo-500">Reports</a>
                 <a href="settings.html" class="block py-2 px-4 mt-2 hover:bg-indigo-500">Settings</a>
             </nav>
