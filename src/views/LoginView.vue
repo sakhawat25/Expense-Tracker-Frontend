@@ -2,7 +2,6 @@
 import { RouterLink, useRouter } from 'vue-router'
 import { ref, reactive, onUnmounted } from 'vue'
 import axios from 'axios'
-
 import InputBox from '@/components/InputBox.vue'
 import SubmitButton from '@/components/SubmitButton.vue'
 import CaptchaBox from '@/components/CaptchaBox.vue'
