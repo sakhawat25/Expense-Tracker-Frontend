@@ -1,15 +1,13 @@
 <script setup>
 import { RouterLink, useRouter } from 'vue-router'
-import { ref, reactive, onUnmounted } from 'vue'
-import axios from 'axios'
+import { ref, reactive, onUnmounted, onMounted } from 'vue'
+import { toast } from 'vue3-toastify'
+import api from '@/api'
 import InputBox from '@/components/InputBox.vue'
 import SubmitButton from '@/components/SubmitButton.vue'
-import CaptchaBox from '@/components/CaptchaBox.vue'
 
 const router = useRouter()
 const isLoading = ref(false)
-const hcaptchaToken = ref(null)
-const captchaBoxRef = ref(null)
 
 const formData = reactive({
     email: '',
@@ -19,12 +17,28 @@ const formData = reactive({
 const validationErrors = reactive({
     email: null,
     password: null,
-    unverified: null,
-    hcaptcha: null,
 })
 
 const clearErrors = () => {
     Object.keys(validationErrors).forEach(key => validationErrors[key] = null)
+}
+
+const showSuccessAlert = (message) => {
+    toast(message, {
+        'theme': 'colored',
+        'type': 'success',
+        'transition': 'slide',
+        'dangerouslyHTMLString': true,
+    })
+}
+
+const showUnSuccessAlert = (message) => {
+    toast(message, {
+        'theme': 'colored',
+        'type': 'error',
+        'transition': 'slide',
+        'dangerouslyHTMLString': true,
+    })
 }
 
 const handleLogin = async () => {
@@ -32,52 +46,91 @@ const handleLogin = async () => {
     clearErrors()
 
     try {
-        const { data } = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/login`, {
-            ...formData,
-            hcaptcha_token: hcaptchaToken.value,
-        })
-
-        localStorage.setItem('token', data.data.token)
+        await api.get('/sanctum/csrf-cookie')
+        await api.post('/login', formData)
 
         localStorage.setItem('success_message', 'Login successful');
 
-        return router.push({ name: 'dashboard' })
+        router.push({ name: 'dashboard' })
     } catch (error) {
+        console.log(error)
         const errors = error?.response?.data?.errors || {}
-        const unverified = error?.response?.data?.data?.unverified
 
         validationErrors.email = errors.email ?? null
         validationErrors.password = errors.password ?? null
         validationErrors.hcaptcha = errors.hcaptcha_token ?? null
 
-        if (unverified) {
-            validationErrors.unverified = error?.response?.data?.data?.message ?? 'Email not verified.'
-        }
-
         formData.password = ''
-        captchaBoxRef.value?.resetCaptcha()
-        hcaptchaToken.value = null
 
         isLoading.value = false
     }
 }
 
-const onVerify = (token) => {
-    hcaptchaToken.value = token
-}
+onMounted(() => {
+    if (localStorage.getItem('success_message')) {
+        const message = localStorage.getItem('success_message')
+        localStorage.removeItem('success_message')
+        showSuccessAlert(message)
+    }
 
-const onExpire = () => {
-    hcaptchaToken.value = null
-}
+    if (localStorage.getItem('unsuccess_message')) {
+        const message = localStorage.getItem('unsuccess_message')
+        localStorage.removeItem('unsuccess_message')
+        showUnSuccessAlert(message)
+    }
+})
 
 onUnmounted(() => {
-    formData.email = ''
-    formData.password = ''
+    Object.keys(formData).forEach(key => formData[key] = '')
     clearErrors()
 })
 </script>
 
 <template>
+    <div class="min-h-screen w-full flex items-center justify-center">
+        <div class="flex flex-col max-w-[1024px] min-h-[600px] w-full px-12 md:flex-row md:justify-between">
+            <div class="flex items-center justify-center w-full md:justify-start">
+                <div class="flex flex-col gap-18 h-full justify-around w-fit items-center w-full">
+                    <RouterLink :to="{ name: 'home' }">
+                        <h1 class="font-extrabold text-[#01705F] text-xl tracking-wide uppercase">
+                            Expense Tracker
+                        </h1>
+                    </RouterLink>
+
+                    <form @submit.prevent="handleLogin" class="flex flex-col gap-12">
+                        <InputBox v-model="formData.email" type="email" label="Email" inputId="email"
+                            placeholder="john.doe@hotmail.com" icon="pi-envelope"
+                            :errorMessages="validationErrors.email" />
+
+                        <InputBox v-model="formData.password" type="password" label="Password" inputId="password"
+                            placeholder="*******" icon="pi-lock" :errorMessages="validationErrors.password" />
+
+                        <div v-if="validationErrors.unverified" class="text-sm text-red-500">
+                            {{ validationErrors.unverified }}
+                        </div>
+
+                        <SubmitButton :isLoading="isLoading" text="Login" />
+
+                        <div class="flex flex-col items-center justify-between">
+                            <p>
+                                Don't have an account? <RouterLink :to="{ name: 'register' }"
+                                    class="transition-all delay-150 duration-300 decoration-[#01705F] hover:text-[#01705F] hover:underline text-[#009C86]">
+                                    Sign Up!</RouterLink>
+                            </p>
+
+                            <a href="#"
+                                class="transition-all delay-150 duration-300 decoration-[#01705F] hover:text-[#01705F] hover:underline text-[#009C86]">Forgot
+                                Password?</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            <div class="flex hidden items-center justify-center md:block w-full rounded-md">
+                <img src="@/assets/images/login.jpg" alt="Login image" class="h-full w-full rounded-lg object-fill" />
+            </div>
+        </div>
+    </div>
+
     <div class="flex items-center justify-center min-h-screen bg-gray-100">
         <div class="w-full max-w-md p-8 space-y-6 bg-white shadow-lg rounded-xl">
             <!-- Logo -->
@@ -86,39 +139,6 @@ onUnmounted(() => {
                     Expense Tracker
                 </RouterLink>
             </div>
-
-            <form @submit.prevent="handleLogin" class="space-y-4">
-                <InputBox v-model="formData.email" type="email" label="Email" placeholder="Enter your email"
-                    :errorMessages="validationErrors.email" />
-
-                <InputBox v-model="formData.password" type="password" label="Password" placeholder="Enter your password"
-                    :errorMessages="validationErrors.password" />
-
-                <div v-if="validationErrors.unverified" class="text-sm text-red-500">
-                    {{ validationErrors.unverified }}
-                </div>
-
-                <CaptchaBox ref="captchaBoxRef" :errorMessages="validationErrors.hcaptcha" @verify="onVerify"
-                    @expire="onExpire" />
-
-                <div class="flex items-center justify-between">
-                    <label class="flex items-center">
-                        <input type="checkbox"
-                            class="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary" />
-                        <span class="ml-2 text-sm text-gray-700">Remember Me</span>
-                    </label>
-                    <a href="#" class="text-sm text-primary hover:underline">Forgot Password?</a>
-                </div>
-
-                <SubmitButton :isLoading="isLoading" text="Login" />
-
-                <p class="text-sm text-center text-gray-600">
-                    Don't have an account?
-                    <RouterLink :to="{ name: 'register' }" class="text-primary hover:underline">
-                        Sign up
-                    </RouterLink>
-                </p>
-            </form>
         </div>
     </div>
 </template>

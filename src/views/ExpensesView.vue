@@ -7,10 +7,13 @@ import Layout from '@/components/Layout.vue'
 import InputBox from '@/components/InputBox.vue'
 import axios from 'axios'
 import 'vue3-toastify/dist/index.css'
+import FormDialogue from '@/components/FormDialogue.vue'
 
 const isLoggingout = ref(false)
 const isLoading = ref(false)
 const expenses = ref(null)
+const showDialog = ref(false)
+const id = ref(null)
 const authStore = useAuthStore()
 const router = useRouter()
 
@@ -89,6 +92,67 @@ const handleAddExpense = async () => {
     }
 }
 
+const handleEditExpense = async (expenseId) => {
+    const token = localStorage.getItem('token')
+    clearErrors()
+    clearForm()
+
+    try {
+        const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/expenses/${expenseId}`, {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            }
+        })
+
+        formData.amount = response?.data?.amount
+        formData.category = response?.data?.category?.name
+        formData.date = response?.data?.date
+        id.value = response?.data?.id
+
+        showDialog.value = true
+    } catch (error) {
+        const errors = error?.response?.data?.errors || {}
+        validationErrors.category = errors.category ?? null
+        validationErrors.amount = errors.amount ?? null
+        validationErrors.date = errors.date ?? null
+    }
+}
+
+const handleUpdateExpense = async (expenseId) => {
+    const token = localStorage.getItem('token')
+    clearErrors()
+
+    try {
+        const response = await axios.put(`${import.meta.env.VITE_API_BASE_URL}/expenses/${expenseId}`, { ...formData }, {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            }
+        })
+
+        // reset form
+        clearForm()
+
+        // Show success toast
+        showSuccessAlert('Expense updated successfully.')
+
+        // update expenses state
+        expenses.value = response?.data?.data?.expenses
+
+        showDialog.value = false
+    } catch (error) {
+        const errors = error?.response?.data?.errors || {}
+        validationErrors.category = errors.category ?? null
+        validationErrors.amount = errors.amount ?? null
+        validationErrors.date = errors.date ?? null
+    }
+}
+
+const closeDialog = () => {
+    clearForm()
+    clearErrors()
+    showDialog.value = !showDialog.value
+}
+
 const clearForm = () => {
     Object.keys(formData).forEach(key => formData[key] = '')
 }
@@ -115,7 +179,6 @@ onMounted(async () => {
         })
 
         expenses.value = respnse.data.data.expenses
-        console.log(expenses.value)
     } catch (error) {
         console.error(error)
     }
@@ -130,7 +193,7 @@ onUnmounted(() => {
 <template>
     <Layout>
         <!-- Main Content -->
-        <main id="mainContent" class="flex-1 p-6 transition-all w-full md:ml-0">
+        <main id="mainContent" class="flex-1 p-6 transition-all w-full md:ml-0 relative">
             <header class="flex justify-between items-center bg-white p-4 shadow rounded-md">
                 <!-- Toggle Sidebar Button for Mobile -->
                 <button class="md:hidden px-4 py-2 bg-indigo-700 text-white rounded" @click="toggleSidebar">
@@ -203,11 +266,13 @@ onUnmounted(() => {
                             <td class="p-2">{{ expense.date }}</td>
                             <td class="p-2">{{ expense.category?.name ?? 'NA' }}</td>
                             <td class="p-2 text-right text-red-600">- ${{ expense.amount }}</td>
-                            <td class="p-2 text-center">
-                                <button
-                                    class="px-2 py-1 bg-yellow-500 text-white rounded-md hover:bg-yellow-600">Edit</button>
-                                <button
-                                    class="px-2 py-1 bg-red-500 text-white rounded-md hover:bg-red-600">Delete</button>
+                            <td class="flex justify-center align-middle gap-2 p-2 text-center">
+                                <button @click="() => { handleEditExpense(expense.id) }" title="Edit"
+                                    class="px-2 py-1 bg-yellow-500 text-white rounded-md cursor-pointer hover:bg-yellow-600"><i
+                                        class="pi pi-file-edit"></i></button>
+                                <button title="Delete"
+                                    class="px-2 py-1 bg-red-500 text-white rounded-md cursor-pointer hover:bg-red-600"><i
+                                        class="pi pi-trash"></i></button>
                             </td>
                         </tr>
                     </tbody>
@@ -228,6 +293,33 @@ onUnmounted(() => {
                     </ul>
                 </nav>
             </div>
+
+            <!-- Modal to edit expenses -->
+            <FormDialogue @close="closeDialog" :isOpen="showDialog" formId="update-expense">
+                <form id="update-expense" @submit.prevent="handleUpdateExpense(id)">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-4">
+                        <InputBox v-model="formData.date" label="Date" type="date"
+                            :errorMessages="validationErrors.date" />
+
+                        <div class="mb-6">
+                            <label for="category" class="block text-sm text-gray-700">Category</label>
+                            <select v-model="formData.category" id="category" name="category"
+                                class="mt-1 px-4 py-2 w-full border rounded-md focus:ring focus:ring-indigo-700 focus:outline-none">
+                                <option value="Food">Food</option>
+                                <option value="Transport">Transport</option>
+                                <option value="Shopping">Shopping</option>
+                                <option value="Bills">Bills</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+
+                        <div class="sm:col-span-2">
+                            <InputBox v-model="formData.amount" label="Amount" type="number" placeholder="100"
+                                :errorMessages="validationErrors.amount" />
+                        </div>
+                    </div>
+                </form>
+            </FormDialogue>
         </main>
     </Layout>
 </template>

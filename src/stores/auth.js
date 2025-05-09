@@ -1,21 +1,19 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
-import axios from 'axios'
+import api from '@/api'
 
 export const useAuthStore = defineStore('auth', () => {
-    const user = ref(null)
+    const user = ref({})
 
-    const getUser = async () => {
-        if (localStorage.getItem('token')) {
-            const { data } = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/user`, {
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                }
-            })
+    const getAuthenticatedUser = async () => {
+        try {
+            const response = await api.get(`/api/user`)
 
-            user.value = data
+            return response.data
+        } catch (error) {
+            console.error(error.response)
         }
     }
 
-    return { user, getUser }
+    return { user, getAuthenticatedUser }
 })

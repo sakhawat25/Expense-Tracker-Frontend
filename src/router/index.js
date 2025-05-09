@@ -57,21 +57,20 @@ const router = createRouter({
 
 // Navigation Guard
 router.beforeEach(async (to, from, next) => {
-  const authStore = useAuthStore()
+  try {
+    const auth = useAuthStore()
+    const user = await auth.getAuthenticatedUser()
 
-  await authStore.getUser()
-
-  if (!authStore.user && to.meta.requiresAuth) {
+    if (user && (to.name === 'login' || to.name === 'register' || to.name === 'verify_email')) {
+      next({ name: 'dashboard' })
+    } else if (to.meta.requiresAuth && !user) {
+      next({ name: 'login' })
+    } else {
+      next()
+    }
+  } catch (error) {
+    console.log(error)
     next({ name: 'login' })
-
-  }
-
-  else if ((to.name === 'login' || to.name === 'register') && authStore.user) {
-    next({ name: 'home' })
-  }
-
-  else {
-    next()
   }
 })
 
