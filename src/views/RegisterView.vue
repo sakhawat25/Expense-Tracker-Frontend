@@ -1,17 +1,15 @@
 <script setup>
 import { RouterLink } from 'vue-router'
-import { ref, reactive, onUnmounted } from 'vue'
-import axios from 'axios'
+import { ref, reactive, onUnmounted, onMounted } from 'vue'
+import api from '@/api'
 import { toast } from 'vue3-toastify'
 import 'vue3-toastify/dist/index.css'
 
 import InputBox from '@/components/InputBox.vue'
 import SubmitButton from '@/components/SubmitButton.vue'
-import CaptchaBox from '@/components/CaptchaBox.vue'
 
 const isLoading = ref(false)
-const hcaptchaToken = ref(null)
-const captchaBoxRef = ref(null)
+const nameInputComponent = ref(null)
 
 const formData = reactive({
     name: '',
@@ -24,7 +22,6 @@ const validationErrors = reactive({
     name: null,
     email: null,
     password: null,
-    hcaptcha: null,
 })
 
 const clearForm = () => {
@@ -41,7 +38,6 @@ const clearErrors = () => {
         name: null,
         email: null,
         password: null,
-        hcaptcha: null,
     })
 }
 
@@ -50,26 +46,20 @@ const handleRegister = async () => {
     clearErrors()
 
     try {
-        const { data } = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/register`, {
-            ...formData,
-            hcaptcha_token: hcaptchaToken.value,
-        })
+        await api.get('/sanctum/csrf-cookie')
+        await api.post('/register', formData)
 
         clearForm()
-        showSuccessToast(data.message)
+        showSuccessToast('Registration successful, verify email to login')
     } catch (error) {
         const errors = error?.response?.data?.errors || {}
 
         validationErrors.name = errors.name ?? null
         validationErrors.email = errors.email ?? null
         validationErrors.password = errors.password ?? null
-        validationErrors.hcaptcha = errors.hcaptcha_token ?? null
 
         formData.password = ''
         formData.password_confirmation = ''
-
-        captchaBoxRef.value?.resetCaptcha()
-        hcaptchaToken.value = null
     } finally {
         isLoading.value = false
     }
@@ -84,13 +74,9 @@ const showSuccessToast = (message) => {
     })
 }
 
-const onVerify = (token) => {
-    hcaptchaToken.value = token
-}
-
-const onExpire = () => {
-    hcaptchaToken.value = null
-}
+onMounted(() => {
+    nameInputComponent.value?.inputRef?.focus()
+})
 
 onUnmounted(() => {
     clearForm()
@@ -99,39 +85,48 @@ onUnmounted(() => {
 </script>
 
 <template>
-    <div class="flex items-center justify-center min-h-screen bg-gray-100">
-        <div class="w-full max-w-md p-8 space-y-6 bg-white shadow-lg rounded-xl">
-            <div class="w-full text-center">
-                <RouterLink :to="{ name: 'home' }" class="text-2xl font-bold text-primary">
-                    Expense Tracker
-                </RouterLink>
+    <div class="min-h-screen w-full flex items-center justify-center">
+        <div class="flex flex-col max-w-[1024px] min-h-[600px] w-full px-12 md:flex-row md:justify-between">
+            <div class="flex items-center justify-center w-full md:justify-start">
+                <div class="flex flex-col gap-12 h-full justify-around w-fit items-center w-full">
+                    <RouterLink :to="{ name: 'home' }">
+                        <h1 class="font-extrabold text-[#01705F] text-xl tracking-wide uppercase">
+                            Expense Tracker
+                        </h1>
+                    </RouterLink>
+
+                    <form @submit.prevent="handleRegister" class="flex flex-col gap-6">
+                        <InputBox ref="nameInputComponent" v-model="formData.name" type="text" label="Name"
+                            inputId="name" placeholder="John Doe" icon="pi-user-plus"
+                            :errorMessages="validationErrors.name" />
+
+                        <InputBox v-model="formData.email" type="text" label="Email" inputId="email"
+                            placeholder="john.doe@hotmail.com" icon="pi-envelope"
+                            :errorMessages="validationErrors.email" />
+
+                        <InputBox v-model="formData.password" type="password" label="Password" inputId="password"
+                            placeholder="*******" icon="pi-lock" :errorMessages="validationErrors.password" />
+
+                        <InputBox v-model="formData.password_confirmation" type="password" label="Password"
+                            inputId="password_confirmation" placeholder="*******" icon="pi-lock" />
+
+                        <SubmitButton :isLoading="isLoading" text="Register" />
+
+                        <div class="flex flex-col items-center justify-between">
+                            <p>
+                                Already have an account? <RouterLink :to="{ name: 'login' }"
+                                    class="transition-all delay-150 duration-300 decoration-[#01705F] hover:text-[#01705F] hover:underline text-[#009C86]">
+                                    Login</RouterLink>
+                            </p>
+                        </div>
+                    </form>
+                </div>
             </div>
 
-            <form @submit.prevent="handleRegister" class="space-y-4">
-                <InputBox v-model="formData.name" type="text" label="Name" placeholder="Enter your name"
-                    :errorMessages="validationErrors.name" />
-
-                <InputBox v-model="formData.email" type="email" label="Email" placeholder="Enter your email"
-                    :errorMessages="validationErrors.email" />
-
-                <InputBox v-model="formData.password" type="password" label="Password" placeholder="Enter your password"
-                    :errorMessages="validationErrors.password" />
-
-                <InputBox v-model="formData.password_confirmation" type="password" label="Confirm Password"
-                    placeholder="Confirm your password" />
-
-                <CaptchaBox ref="captchaBoxRef" :errorMessages="validationErrors.hcaptcha" @verify="onVerify"
-                    @expire="onExpire" />
-
-                <SubmitButton :isLoading="isLoading" text="Register" />
-
-                <p class="mt-4 text-sm text-center text-gray-600">
-                    Already have an account?
-                    <RouterLink :to="{ name: 'login' }" class="text-primary hover:underline">
-                        Login
-                    </RouterLink>
-                </p>
-            </form>
+            <div class="flex hidden items-center justify-center md:block w-full rounded-md">
+                <img src="@/assets/images/register.jpg" alt="Login image"
+                    class="h-full w-full rounded-lg object-fill" />
+            </div>
         </div>
     </div>
 </template>

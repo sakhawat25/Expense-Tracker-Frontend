@@ -5,7 +5,7 @@ import { useAuthStore } from '@/stores/auth'
 import DoughnutChart from '@/components/DoughnutChart.vue'
 import Layout from '@/components/Layout.vue'
 import StatCard from '@/components/StatCard.vue'
-import axios from 'axios'
+import api from '@/api'
 
 const isLoggingout = ref(false)
 const authStore = useAuthStore()
@@ -20,17 +20,12 @@ const toggleSidebar = () => {
 
 const handleLogout = async () => {
     isLoggingout.value = true
-    const token = localStorage.getItem('token')
 
     try {
-        await axios.post(`${import.meta.env.VITE_API_BASE_URL}/logout`, {}, {
-            headers: {
-                Authorization: `Bearer ${token}`,
-            }
-        })
+        await api.get('/sanctum/csrf-cookie')
+        await api.post('/logout')
 
-        localStorage.removeItem('token')
-        authStore.user = null
+        authStore.user = {}
 
         setTimeout(() => {
             router.push({ name: 'login' })

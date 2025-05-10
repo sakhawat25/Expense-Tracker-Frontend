@@ -8,6 +8,7 @@ import SubmitButton from '@/components/SubmitButton.vue'
 
 const router = useRouter()
 const isLoading = ref(false)
+const emailInputComponent = ref(null)
 
 const formData = reactive({
     email: '',
@@ -67,6 +68,8 @@ const handleLogin = async () => {
 }
 
 onMounted(() => {
+    emailInputComponent.value?.inputRef?.focus()
+
     if (localStorage.getItem('success_message')) {
         const message = localStorage.getItem('success_message')
         localStorage.removeItem('success_message')
@@ -90,7 +93,7 @@ onUnmounted(() => {
     <div class="min-h-screen w-full flex items-center justify-center">
         <div class="flex flex-col max-w-[1024px] min-h-[600px] w-full px-12 md:flex-row md:justify-between">
             <div class="flex items-center justify-center w-full md:justify-start">
-                <div class="flex flex-col gap-18 h-full justify-around w-fit items-center w-full">
+                <div class="flex flex-col gap-8 h-full justify-around w-fit items-center w-full">
                     <RouterLink :to="{ name: 'home' }">
                         <h1 class="font-extrabold text-[#01705F] text-xl tracking-wide uppercase">
                             Expense Tracker
@@ -98,8 +101,8 @@ onUnmounted(() => {
                     </RouterLink>
 
                     <form @submit.prevent="handleLogin" class="flex flex-col gap-12">
-                        <InputBox v-model="formData.email" type="email" label="Email" inputId="email"
-                            placeholder="john.doe@hotmail.com" icon="pi-envelope"
+                        <InputBox ref="emailInputComponent" v-model="formData.email" type="text" label="Email"
+                            inputId="email" placeholder="john.doe@hotmail.com" icon="pi-envelope"
                             :errorMessages="validationErrors.email" />
 
                         <InputBox v-model="formData.password" type="password" label="Password" inputId="password"
@@ -115,7 +118,7 @@ onUnmounted(() => {
                             <p>
                                 Don't have an account? <RouterLink :to="{ name: 'register' }"
                                     class="transition-all delay-150 duration-300 decoration-[#01705F] hover:text-[#01705F] hover:underline text-[#009C86]">
-                                    Sign Up!</RouterLink>
+                                    Sign Up</RouterLink>
                             </p>
 
                             <a href="#"
@@ -127,17 +130,6 @@ onUnmounted(() => {
             </div>
             <div class="flex hidden items-center justify-center md:block w-full rounded-md">
                 <img src="@/assets/images/login.jpg" alt="Login image" class="h-full w-full rounded-lg object-fill" />
-            </div>
-        </div>
-    </div>
-
-    <div class="flex items-center justify-center min-h-screen bg-gray-100">
-        <div class="w-full max-w-md p-8 space-y-6 bg-white shadow-lg rounded-xl">
-            <!-- Logo -->
-            <div class="text-center">
-                <RouterLink :to="{ name: 'home' }" class="text-2xl font-bold text-primary">
-                    Expense Tracker
-                </RouterLink>
             </div>
         </div>
     </div>
