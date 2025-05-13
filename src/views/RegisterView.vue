@@ -90,7 +90,7 @@ onUnmounted(() => {
             <div class="flex items-center justify-center w-full md:justify-start">
                 <div class="flex flex-col gap-12 h-full justify-around w-fit items-center w-full">
                     <RouterLink :to="{ name: 'home' }">
-                        <h1 class="font-extrabold text-[#01705F] text-xl tracking-wide uppercase">
+                        <h1 class="font-extrabold text-indigo-700 text-xl tracking-wide uppercase">
                             Expense Tracker
                         </h1>
                     </RouterLink>
@@ -115,7 +115,7 @@ onUnmounted(() => {
                         <div class="flex flex-col items-center justify-between">
                             <p>
                                 Already have an account? <RouterLink :to="{ name: 'login' }"
-                                    class="transition-all delay-150 duration-300 decoration-[#01705F] hover:text-[#01705F] hover:underline text-[#009C86]">
+                                    class="transition-all delay-150 duration-300 decoration-indigo-700 hover:text-indigo-700 hover:underline text-indigo-500">
                                     Login</RouterLink>
                             </p>
                         </div>
