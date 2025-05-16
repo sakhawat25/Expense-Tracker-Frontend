@@ -18,8 +18,8 @@ const chartData = ref({
 })
 
 const chartOptions = ref({
-    responsive: true,
-    maintainAspectRatio: false,
+    responsive: false,
+    maintainAspectRatio: true,
 })
 </script>
 

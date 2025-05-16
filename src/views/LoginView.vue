@@ -5,10 +5,12 @@ import { toast } from 'vue3-toastify'
 import api from '@/api'
 import InputBox from '@/components/InputBox.vue'
 import SubmitButton from '@/components/SubmitButton.vue'
+import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
 const isLoading = ref(false)
 const emailInputComponent = ref(null)
+const authStore = useAuthStore()
 
 const formData = reactive({
     email: '',
@@ -49,6 +51,8 @@ const handleLogin = async () => {
     try {
         await api.get('/sanctum/csrf-cookie')
         await api.post('/login', formData)
+
+        authStore.user = await authStore.getAuthenticatedUser()
 
         localStorage.setItem('success_message', 'Login successful');
 
