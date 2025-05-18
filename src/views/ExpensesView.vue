@@ -1,21 +1,18 @@
 <script setup>
 import { ref, reactive, onUnmounted, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { useAuthStore } from '@/stores/auth'
 import { toast } from 'vue3-toastify'
 import Layout from '@/components/Layout.vue'
 import InputBox from '@/components/InputBox.vue'
 import axios from 'axios'
 import 'vue3-toastify/dist/index.css'
 import FormDialogue from '@/components/FormDialogue.vue'
+import api from '@/api'
 
-const isLoggingout = ref(false)
 const isLoading = ref(false)
 const expenses = ref(null)
 const showDialog = ref(false)
+const showEditDialog = ref(false)
 const id = ref(null)
-const authStore = useAuthStore()
-const router = useRouter()
 
 const formData = reactive({
     category: '',
@@ -29,49 +26,13 @@ const validationErrors = reactive({
     date: null,
 })
 
-const toggleSidebar = () => {
-    const sidebar = document.getElementById("sidebar");
-    const mainContent = document.getElementById("mainContent");
-    sidebar.classList.toggle("-translate-x-full");
-    mainContent.classList.toggle("ml-64");
-}
-
-const handleLogout = async () => {
-    isLoggingout.value = true
-    const token = localStorage.getItem('token')
-
-    try {
-        await axios.post(`${import.meta.env.VITE_API_BASE_URL}/logout`, {}, {
-            headers: {
-                Authorization: `Bearer ${token}`,
-            }
-        })
-
-        localStorage.removeItem('token')
-        authStore.user = null
-
-        setTimeout(() => {
-            router.push({ name: 'login' })
-        }, 100)
-    } catch (error) {
-        console.log(error.response)
-        isLoggingout.value = false
-    }
-}
-
 const handleAddExpense = async () => {
     isLoading.value = true
-    const token = localStorage.getItem('token')
     clearErrors()
 
     try {
-        const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/expenses`, { ...formData }, {
-            headers: {
-                Authorization: `Bearer ${token}`,
-            }
-        })
-
-        console.log(response)
+        await api.get('/sanctum/csrf-cookie')
+        const response = await api.post('/api/v1/expenses', formData)
 
         // reset form
         clearForm()
@@ -83,6 +44,7 @@ const handleAddExpense = async () => {
         expenses.value = response.data.data.expenses
 
         isLoading.value = false
+        showDialog.value = false
     } catch (error) {
         const errors = error?.response?.data?.errors || {}
         validationErrors.category = errors.category ?? null
@@ -93,23 +55,20 @@ const handleAddExpense = async () => {
 }
 
 const handleEditExpense = async (expenseId) => {
-    const token = localStorage.getItem('token')
     clearErrors()
     clearForm()
 
     try {
-        const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/expenses/${expenseId}`, {
-            headers: {
-                Authorization: `Bearer ${token}`,
-            }
-        })
+        const response = await api.get(`api/v1/expenses/${expenseId}`)
 
-        formData.amount = response?.data?.amount
-        formData.category = response?.data?.category?.name
-        formData.date = response?.data?.date
-        id.value = response?.data?.id
+        const expense = response?.data?.data?.expense
 
-        showDialog.value = true
+        formData.amount = expense.amount
+        formData.category = expense.name
+        formData.date = expense.date
+        id.value = expense.id
+
+        showEditDialog.value = true
     } catch (error) {
         const errors = error?.response?.data?.errors || {}
         validationErrors.category = errors.category ?? null
@@ -150,7 +109,8 @@ const handleUpdateExpense = async (expenseId) => {
 const closeDialog = () => {
     clearForm()
     clearErrors()
-    showDialog.value = !showDialog.value
+    showDialog.value = false
+    showEditDialog.value = false
 }
 
 const clearForm = () => {
@@ -172,13 +132,9 @@ const showSuccessAlert = (message) => {
 
 onMounted(async () => {
     try {
-        const respnse = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/expenses`, {
-            headers: {
-                Authorization: `Bearer ${localStorage.getItem('token')}`,
-            }
-        })
+        const response = await api.get('/api/v1/expenses')
 
-        expenses.value = respnse.data.data.expenses
+        expenses.value = response.data.data.expenses
     } catch (error) {
         console.error(error)
     }
@@ -192,134 +148,133 @@ onUnmounted(() => {
 
 <template>
     <Layout>
-        <!-- Main Content -->
-        <main id="mainContent" class="flex-1 p-6 transition-all w-full md:ml-0 relative">
-            <header class="flex justify-between items-center bg-white p-4 shadow rounded-md">
-                <!-- Toggle Sidebar Button for Mobile -->
-                <button class="md:hidden px-4 py-2 bg-indigo-700 text-white rounded" @click="toggleSidebar">
-                    <i class="pi pi-align-justify"></i>
-                </button>
-                <h2 class="text-xl font-semibold">Expenses</h2>
-                <button @click="handleLogout" :disabled="isLoggingout" :class="['px-4 py-2 text-white rounded transition',
-                    isLoggingout
-                        ? 'bg-red-400 curson-not-allowed opacity-60'
-                        : 'bg-red-500 hover:bg-red-600'
-                ]">
-                    Logout <i v-if="isLoggingout" class="pi pi-spin pi-spinner-dotted"></i> <i v-else
-                        class="pi pi-sign-out"></i>
-                </button>
-            </header>
+        <!-- Header -->
+        <div class="flex items-center justify-between">
+            <h2 class="text-3xl">Expenses</h2>
+            <button @click="() => { showDialog = true }"
+                class="bg-green-600 cursor-pointer outline-none px-4 py-2 rounded-md shadow-md text-white hover:bg-green-700">Add
+                Expense</button>
+        </div>
 
-            <!-- Add New Expense Form -->
-            <div class="mt-6 bg-white p-6 shadow rounded-md">
-                <h3 class="text-lg font-semibold text-gray-700">Add New Expense</h3>
-                <form @submit.prevent="handleAddExpense">
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-4">
-                        <InputBox v-model="formData.date" label="Date" type="date"
-                            :errorMessages="validationErrors.date" />
+        <!-- Table -->
+        <table>
+            <thead>
+                <tr>
+                    <th class="p-4 px-2 border-b border-slate-300 bg-slate-50">
+                        <p class="block text-sm font-normal leading-none text-slate-500">
+                            Date
+                        </p>
+                    </th>
+                    <th class="p-4 border-b border-slate-300 bg-slate-50">
+                        <p class="block text-sm font-normal leading-none text-slate-500">
+                            Category
+                        </p>
+                    </th>
+                    <th class="p-4 border-b border-slate-300 bg-slate-50">
+                        <p class="block text-sm font-normal leading-none text-slate-500">
+                            Amount
+                        </p>
+                    </th>
+                    <th class="p-4 border-b border-slate-300 bg-slate-50">
+                        <p class="block text-sm font-normal leading-none text-slate-500">
+                            Actions
+                        </p>
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr v-if="!expenses" class="hover:bg-slate-50 border-b border-slate-200 text-center">
+                    <td class="p-4 py-5" colspan="4">
+                        No records available
+                    </td>
+                </tr>
+                <tr v-for="expense in expenses?.data" :key="expense.id"
+                    class="hover:bg-slate-50 border-b border-slate-200 text-center">
+                    <td class="p-4 py-5">
+                        <p class="block text-sm text-slate-800">{{ expense.date }}</p>
+                    </td>
+                    <td class="p-4 py-5">
+                        <p class="block text-sm text-slate-800">{{ expense.category?.name ?? 'NA' }}</p>
+                    </td>
+                    <td class="p-4 py-5">
+                        <p class="block text-sm text-slate-800">- ${{ expense.amount }}</p>
+                    </td>
+                    <td class="flex gap-3 items-center justify-center p-4 py-5">
+                        <button @click="() => { handleEditExpense(expense.id) }"
+                            class="cursor-pointer outline-none text-yellow-500 hover:text-yellow-600" title="Edit"><i
+                                class="pi pi-pencil"></i></button>
+                        <button class="cursor-pointer outline-none text-red-500 hover:text-red-600" title="Delete"><i
+                                class="pi pi-trash"></i></button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
 
-                        <div class="mb-6">
-                            <label for="category" class="block text-sm text-gray-700">Category</label>
-                            <select v-model="formData.category" id="category" name="category"
-                                class="mt-1 px-4 py-2 w-full border rounded-md focus:ring focus:ring-indigo-700 focus:outline-none">
-                                <option value="Food">Food</option>
-                                <option value="Transport">Transport</option>
-                                <option value="Shopping">Shopping</option>
-                                <option value="Bills">Bills</option>
-                                <option value="Other">Other</option>
-                            </select>
-                        </div>
+        <!-- Pagination -->
+        <div class="mt-6 flex justify-center">
+            <nav>
+                <ul class="flex space-x-4">
+                    <li v-for="(link, index) in expenses?.links" :key="index">
+                        <button v-html="link.label" :class="['px-4 py-2 rounded-md',
+                            link.active
+                                ? 'bg-indigo-700 text-white'
+                                : 'bg-gray-300 text-gray-700'
+                        ]"></button>
+                    </li>
+                </ul>
+            </nav>
+        </div>
 
-                        <div class="sm:col-span-2">
-                            <InputBox v-model="formData.amount" label="Amount" type="number" placeholder="100"
-                                :errorMessages="validationErrors.amount" />
-                        </div>
+        <!-- Modal to add expenses -->
+        <FormDialogue @close="closeDialog" :isOpen="showDialog" :isLoading="isLoading" formId="update-expense">
+            <form id="update-expense" @submit.prevent="handleAddExpense">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-4">
+                    <InputBox v-model="formData.date" label="Date" type="date" :errorMessages="validationErrors.date" />
 
-                        <div class="sm:col-span-2 flex justify-end mt-4">
-                            <button type="submit" :disabled="isLoading" :class="['relative w-2xs px-6 py-2 text-white rounded-md',
-                                isLoading
-                                    ? 'bg-green-600 cursor-not-allowed opacity-60'
-                                    : 'bg-green-600 hover:bg-green-700'
-                            ]">
-                                Add Expense
-                                <i v-if="isLoading" class="pi pi-spin pi-spinner-dotted absolute top-3 right-4"></i>
-                            </button>
-                        </div>
+                    <div class="flex flex-col gap-3">
+                        <label for="category" class="block text-sm text-indigo-700">Category</label>
+                        <select v-model="formData.category" id="category" name="category"
+                            class="focus:outline-indigo-700 mt-1 outline-2 outline-indigo-300 px-8 py-2 rounded-md text-indigo-700 w-full">
+                            <option value="Food">Food</option>
+                            <option value="Transport">Transport</option>
+                            <option value="Shopping">Shopping</option>
+                            <option value="Bills">Bills</option>
+                            <option value="Other">Other</option>
+                        </select>
                     </div>
-                </form>
-            </div>
 
-            <!-- Expenses List -->
-            <div class="mt-6 bg-white p-6 shadow rounded-md">
-                <h3 class="text-lg font-semibold text-gray-700">Recent Expenses</h3>
-                <table class="w-full mt-4 border-collapse">
-                    <thead>
-                        <tr class="bg-gray-200 text-gray-700">
-                            <th class="p-2 text-left">Date</th>
-                            <th class="p-2 text-left">Category</th>
-                            <th class="p-2 text-right">Amount</th>
-                            <th class="p-2 text-center">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr v-for="expense in expenses?.data" :key="expense.id" class="border-b">
-                            <td class="p-2">{{ expense.date }}</td>
-                            <td class="p-2">{{ expense.category?.name ?? 'NA' }}</td>
-                            <td class="p-2 text-right text-red-600">- ${{ expense.amount }}</td>
-                            <td class="flex justify-center align-middle gap-2 p-2 text-center">
-                                <button @click="() => { handleEditExpense(expense.id) }" title="Edit"
-                                    class="px-2 py-1 bg-yellow-500 text-white rounded-md cursor-pointer hover:bg-yellow-600"><i
-                                        class="pi pi-file-edit"></i></button>
-                                <button title="Delete"
-                                    class="px-2 py-1 bg-red-500 text-white rounded-md cursor-pointer hover:bg-red-600"><i
-                                        class="pi pi-trash"></i></button>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-
-            <!-- Pagination -->
-            <div class="mt-6 flex justify-center">
-                <nav>
-                    <ul class="flex space-x-4">
-                        <li v-for="(link, index) in expenses?.links" :key="index">
-                            <button v-html="link.label" :class="['px-4 py-2 rounded-md',
-                                link.active
-                                    ? 'bg-indigo-700 text-white'
-                                    : 'bg-gray-300 text-gray-700'
-                            ]"></button>
-                        </li>
-                    </ul>
-                </nav>
-            </div>
-
-            <!-- Modal to edit expenses -->
-            <FormDialogue @close="closeDialog" :isOpen="showDialog" formId="update-expense">
-                <form id="update-expense" @submit.prevent="handleUpdateExpense(id)">
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-4">
-                        <InputBox v-model="formData.date" label="Date" type="date"
-                            :errorMessages="validationErrors.date" />
-
-                        <div class="mb-6">
-                            <label for="category" class="block text-sm text-gray-700">Category</label>
-                            <select v-model="formData.category" id="category" name="category"
-                                class="mt-1 px-4 py-2 w-full border rounded-md focus:ring focus:ring-indigo-700 focus:outline-none">
-                                <option value="Food">Food</option>
-                                <option value="Transport">Transport</option>
-                                <option value="Shopping">Shopping</option>
-                                <option value="Bills">Bills</option>
-                                <option value="Other">Other</option>
-                            </select>
-                        </div>
-
-                        <div class="sm:col-span-2">
-                            <InputBox v-model="formData.amount" label="Amount" type="number" placeholder="100"
-                                :errorMessages="validationErrors.amount" />
-                        </div>
+                    <div class="sm:col-span-2">
+                        <InputBox v-model="formData.amount" label="Amount ($)" type="number" placeholder="100"
+                            :errorMessages="validationErrors.amount" />
                     </div>
-                </form>
-            </FormDialogue>
-        </main>
+                </div>
+            </form>
+        </FormDialogue>
+
+        <!-- Modal to edit expenses -->
+        <FormDialogue @close="closeDialog" :isOpen="showEditDialog" :isLoading="isLoading" formId="update-expense">
+            <form id="update-expense" @submit.prevent="handleUpdateExpense">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-4">
+                    <InputBox v-model="formData.date" label="Date" type="date" :errorMessages="validationErrors.date" />
+
+                    <div class="flex flex-col gap-3">
+                        <label for="category" class="block text-sm text-indigo-700">Category</label>
+                        <select v-model="formData.category" id="category" name="category"
+                            class="focus:outline-indigo-700 mt-1 outline-2 outline-indigo-300 px-8 py-2 rounded-md text-indigo-700 w-full">
+                            <option value="Food">Food</option>
+                            <option value="Transport">Transport</option>
+                            <option value="Shopping">Shopping</option>
+                            <option value="Bills">Bills</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+
+                    <div class="sm:col-span-2">
+                        <InputBox v-model="formData.amount" label="Amount ($)" type="number" placeholder="100"
+                            :errorMessages="validationErrors.amount" />
+                    </div>
+                </div>
+            </form>
+        </FormDialogue>
     </Layout>
 </template>
