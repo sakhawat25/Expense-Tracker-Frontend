@@ -3,7 +3,6 @@ import { ref, reactive, onUnmounted, onMounted } from 'vue'
 import { toast } from 'vue3-toastify'
 import Layout from '@/components/Layout.vue'
 import InputBox from '@/components/InputBox.vue'
-import axios from 'axios'
 import 'vue3-toastify/dist/index.css'
 import FormDialogue from '@/components/FormDialogue.vue'
 import api from '@/api'
@@ -31,20 +30,25 @@ const handleAddExpense = async () => {
     clearErrors()
 
     try {
+        const data = Object.fromEntries(
+            Object.entries(formData).filter(([_, value]) => value !== '')
+        )
+
         await api.get('/sanctum/csrf-cookie')
-        const response = await api.post('/api/v1/expenses', formData)
+        const response = await api.post('/api/v1/expenses', data)
 
         // reset form
         clearForm()
-
-        // Show success toast
-        showSuccessAlert('Expense added successfully.')
 
         // update expenses state
         expenses.value = response.data.data.expenses
 
         isLoading.value = false
         showDialog.value = false
+
+        // Show success toast
+        showSuccessAlert('Expense added successfully.')
+
     } catch (error) {
         const errors = error?.response?.data?.errors || {}
         validationErrors.category = errors.category ?? null
@@ -59,12 +63,14 @@ const handleEditExpense = async (expenseId) => {
     clearForm()
 
     try {
-        const response = await api.get(`api/v1/expenses/${expenseId}`)
+        const response = await api.get(`/api/v1/expenses/${expenseId}`)
 
         const expense = response?.data?.data?.expense
 
+        console.log(expense)
+
         formData.amount = expense.amount
-        formData.category = expense.name
+        formData.category = expense?.category?.name
         formData.date = expense.date
         id.value = expense.id
 
@@ -78,31 +84,57 @@ const handleEditExpense = async (expenseId) => {
 }
 
 const handleUpdateExpense = async (expenseId) => {
-    const token = localStorage.getItem('token')
     clearErrors()
-
+    isLoading.value = true
     try {
-        const response = await axios.put(`${import.meta.env.VITE_API_BASE_URL}/expenses/${expenseId}`, { ...formData }, {
-            headers: {
-                Authorization: `Bearer ${token}`,
-            }
-        })
+        await api.get('/sanctum/csrf-cookie')
+        const response = await api.put(`api/v1/expenses/${expenseId}`, formData)
 
         // reset form
         clearForm()
 
-        // Show success toast
-        showSuccessAlert('Expense updated successfully.')
-
         // update expenses state
         expenses.value = response?.data?.data?.expenses
 
-        showDialog.value = false
+        isLoading.value = false
+        showEditDialog.value = false
+
+        // Show success toast
+        showSuccessAlert('Expense updated successfully.')
     } catch (error) {
         const errors = error?.response?.data?.errors || {}
         validationErrors.category = errors.category ?? null
         validationErrors.amount = errors.amount ?? null
         validationErrors.date = errors.date ?? null
+
+        isLoading.value = false
+    }
+}
+
+const handleDeleteExpense = async (expenseId) => {
+    try {
+        await api.get('/sanctum/csrf-cookie')
+        const response = await api.delete(`api/v1/expenses/${expenseId}`)
+
+        // update expenses state
+        expenses.value = response?.data?.data?.expenses
+
+        // Show success toast
+        showSuccessAlert('Expense updated successfully.')
+    } catch (error) {
+        console.error(error)
+    }
+}
+
+const gotoPage = async (url) => {
+    const page = url.split('?')[1]
+
+    try {
+        const response = await api.get(`/api/v1/expenses?${page}`)
+
+        expenses.value = response.data.data.expenses
+    } catch (error) {
+        console.error(error)
     }
 }
 
@@ -115,6 +147,7 @@ const closeDialog = () => {
 
 const clearForm = () => {
     Object.keys(formData).forEach(key => formData[key] = '')
+    id.value = null
 }
 
 const clearErrors = () => {
@@ -203,7 +236,8 @@ onUnmounted(() => {
                         <button @click="() => { handleEditExpense(expense.id) }"
                             class="cursor-pointer outline-none text-yellow-500 hover:text-yellow-600" title="Edit"><i
                                 class="pi pi-pencil"></i></button>
-                        <button class="cursor-pointer outline-none text-red-500 hover:text-red-600" title="Delete"><i
+                        <button @click="() => { handleDeleteExpense(expense.id) }"
+                            class="cursor-pointer outline-none text-red-500 hover:text-red-600" title="Delete"><i
                                 class="pi pi-trash"></i></button>
                     </td>
                 </tr>
@@ -215,10 +249,13 @@ onUnmounted(() => {
             <nav>
                 <ul class="flex space-x-4">
                     <li v-for="(link, index) in expenses?.links" :key="index">
-                        <button v-html="link.label" :class="['px-4 py-2 rounded-md',
+                        <button @click="() => { gotoPage(link.url) }" :disabled="!link.url" v-html="link.label" :class="['px-4 py-2 rounded-md',
                             link.active
-                                ? 'bg-indigo-700 text-white'
-                                : 'bg-gray-300 text-gray-700'
+                                ? 'bg-indigo-700 text-white cursor-pointer'
+                                :
+                                !link.url
+                                    ? 'bg-gray-300 text-gray-700 cursor-not-allowed'
+                                    : 'bg-gray-300 text-gray-700 cursor-pointer'
                         ]"></button>
                     </li>
                 </ul>
@@ -253,7 +290,7 @@ onUnmounted(() => {
 
         <!-- Modal to edit expenses -->
         <FormDialogue @close="closeDialog" :isOpen="showEditDialog" :isLoading="isLoading" formId="update-expense">
-            <form id="update-expense" @submit.prevent="handleUpdateExpense">
+            <form id="update-expense" @submit.prevent="() => { handleUpdateExpense(id) }">
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-4">
                     <InputBox v-model="formData.date" label="Date" type="date" :errorMessages="validationErrors.date" />
 
@@ -261,11 +298,15 @@ onUnmounted(() => {
                         <label for="category" class="block text-sm text-indigo-700">Category</label>
                         <select v-model="formData.category" id="category" name="category"
                             class="focus:outline-indigo-700 mt-1 outline-2 outline-indigo-300 px-8 py-2 rounded-md text-indigo-700 w-full">
-                            <option value="Food">Food</option>
-                            <option value="Transport">Transport</option>
-                            <option value="Shopping">Shopping</option>
-                            <option value="Bills">Bills</option>
-                            <option value="Other">Other</option>
+                            <option value="Food" :selected="(formData.category === 'Food') ? true : false">Food</option>
+                            <option value="Transport" :selected="formData.category === 'Transport'">
+                                Transport</option>
+                            <option value="Shopping" :selected="formData.category === 'Shopping'">
+                                Shopping</option>
+                            <option value="Bills" :selected="formData.category === 'Bills'">Bills
+                            </option>
+                            <option value="Other" :selected="formData.category === 'Other'">Other
+                            </option>
                         </select>
                     </div>
 
