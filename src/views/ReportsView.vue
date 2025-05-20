@@ -1,36 +1,57 @@
-<script setup>
-import DoughnutChart from '@/components/DoughnutChart.vue'
-import Layout from '@/components/Layout.vue'
-import StatCard from '@/components/StatCard.vue'
+<script setup lang="ts">
+import Layout from '@/components/Layout.vue';
+import LineChart from '@/components/LineChart.vue';
+import PieChart from '@/components/PieChart.vue';
+
 </script>
 
 <template>
     <Layout>
         <!-- Header -->
-        <div class="flex">
-            <h2 class="text-3xl">Dashboard</h2>
+        <div class="flex items-center justify-between">
+            <h2 class="text-3xl">Reports</h2>
         </div>
 
-        <!-- Cards -->
-        <div class="grid gap-8 lg:grid-cols-3">
-            <StatCard title="Total Expenses" value="1200" icon="pi-cart-arrow-down" iconColor="red" />
-            <StatCard title="This Month" value="300" icon="pi-calendar" iconColor="yellow" />
-            <StatCard title="Categories" value="5" icon="pi-list" iconColor="green" />
-        </div>
-
-        <!-- Chart -->
         <div class="bg-white flex flex-col gap-8 px-8 py-4 shadow-lg">
-            <h3 class="text-xl">Expenses Breakdown</h3>
-            <div class="flex items-center justify-evenly">
-                <!-- <canvas id="expenseChart"></canvas> -->
-                <DoughnutChart />
+            <h3 class="text-xl">Filter Reports</h3>
+            <div class="flex flex-col justify-between gap-4 md:flex-row md:items-end md:justify-center">
+                <div class="flex flex-col gap-2">
+                    <label class="text-indigo-700" for="from">From</label>
+                    <input
+                        class="outline-none border-1 border-indigo-600 text-indigo-700 px-4 py-2 focus:border-indigo-700"
+                        type="date" id="from">
+                </div>
+                <div class="flex flex-col gap-2">
+                    <label class="text-indigo-700" for="to">To</label>
+                    <input
+                        class="outline-none border-1 border-indigo-600 text-indigo-700 px-4 py-2 focus:border-indigo-700"
+                        type="date" id="to">
+                </div>
+                <button
+                    class="delay-50 duration-200 outline-none px-4 py-2 text-white transition-all bg-indigo-500 cursor-pointer hover:bg-indigo-700 hover:scale-105">
+                    Apply Filter
+                </button>
             </div>
         </div>
 
-        <!-- Recent Expenses -->
         <div class="bg-white flex flex-col gap-8 px-8 py-4 shadow-lg">
-            <h3 class="text-xl">Recent Expenses</h3>
+            <h3 class="text-xl">Monthly Expense Trend</h3>
+            <div class="flex items-center justify-evenly">
+                <!-- <canvas id="expenseChart"></canvas> -->
+                <LineChart />
+            </div>
+        </div>
 
+        <div class="bg-white flex flex-col gap-8 px-8 py-4 shadow-lg">
+            <h3 class="text-xl">Category-wise Expense</h3>
+            <div class="flex items-center justify-evenly">
+                <!-- <canvas id="expenseChart"></canvas> -->
+                <PieChart />
+            </div>
+        </div>
+
+        <div class="bg-white flex flex-col gap-8 px-8 py-4 shadow-lg">
+            <h3 class="text-xl">Expense Breakdown</h3>
             <table>
                 <thead>
                     <tr>

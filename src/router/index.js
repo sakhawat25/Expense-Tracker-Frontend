@@ -7,6 +7,7 @@ import ResendVerificationView from '@/views/ResendVerificationView.vue'
 import DashboardView from '@/views/DashboardView.vue'
 import { useAuthStore } from '@/stores/auth'
 import ExpensesView from '@/views/ExpensesView.vue'
+import ReportsView from '@/views/ReportsView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -28,6 +29,14 @@ const router = createRouter({
       path: '/expenses',
       name: 'expenses',
       component: ExpensesView,
+      meta: {
+        requiresAuth: true,
+      }
+    },
+    {
+      path: '/reports',
+      name: 'reports',
+      component: ReportsView,
       meta: {
         requiresAuth: true,
       }
