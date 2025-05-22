@@ -23,21 +23,21 @@ const route = useRoute()
                 route.name === 'dashboard' ? 'bg-indigo-800' : ''
             ]">
                 <i class="pi pi-chart-line"></i>
-                <span class="hidden">Dashboard</span>
+                <span class="hidden menu-texts">Dashboard</span>
             </RouterLink>
 
             <RouterLink title="Expenses" :to="{ name: 'expenses' }" :class="['flex items-center gap-4 hover:bg-indigo-800 px-4 py-2',
                 route.name === 'expenses' ? 'bg-indigo-800' : ''
             ]">
                 <i class="pi pi-cart-arrow-down"></i>
-                <span class="hidden">Expenses</span>
+                <span class="hidden menu-texts">Expenses</span>
             </RouterLink>
 
             <RouterLink title="Reports" :to="{ name: 'reports' }" :class="['flex items-center gap-4 hover:bg-indigo-800 px-4 py-2',
                 route.name === 'reports' ? 'bg-indigo-800' : ''
             ]">
                 <i class="pi pi-file"></i>
-                <span class="hidden">Reports</span>
+                <span class="hidden menu-texts">Reports</span>
             </RouterLink>
         </div>
     </aside>

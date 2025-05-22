@@ -40,7 +40,7 @@ const toggleSidebar = (event) => {
     const toggleSidebar = document.getElementById("toggleSidebar");
     const title = document.getElementById('title')
     const menuLabels = document.getElementsByClassName("menu-label");
-    const menuTexts = document.querySelectorAll("a span");
+    const menuTexts = document.querySelectorAll("a .menu-texts");
 
     toggleSidebar.classList.toggle("rotate-180");
     sidebar.classList.toggle("p-5");
