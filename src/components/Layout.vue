@@ -122,5 +122,6 @@ main {
     grid-template-columns: 1fr;
     grid-template-rows: auto 1fr;
     gap: 1rem;
+    overflow-x: scroll;
 }
 </style>
