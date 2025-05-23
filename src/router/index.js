@@ -69,6 +69,7 @@ router.beforeEach(async (to, from, next) => {
   try {
     const auth = useAuthStore()
     const user = await auth.getAuthenticatedUser()
+    auth.user = user
 
     if (user && (to.name === 'login' || to.name === 'register' || to.name === 'verify_email')) {
       next({ name: 'dashboard' })

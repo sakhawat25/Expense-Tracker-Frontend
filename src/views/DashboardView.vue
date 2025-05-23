@@ -1,7 +1,39 @@
 <script setup>
+import api from '@/api'
 import DoughnutChart from '@/components/DoughnutChart.vue'
 import Layout from '@/components/Layout.vue'
 import StatCard from '@/components/StatCard.vue'
+import { onMounted, reactive, ref } from 'vue'
+
+const stats = reactive({
+    totalExpenses: 0,
+    monthlyExpenses: 0,
+    categoriesUsed: 0,
+})
+
+const chartLabels = ref([])
+const chartValues = ref([])
+const recentExpenses = ref([])
+
+onMounted(async () => {
+    try {
+        await api.get('/sanctum/csrf-cookie')
+        const response = await api.get('/api/v1/dashboard')
+
+        const { totalExpenses, monthlyExpenses, categoriesUsed, expensesPerCategory, recentExpenses: recent } = response.data.data
+
+        stats.totalExpenses = totalExpenses
+        stats.monthlyExpenses = monthlyExpenses
+        stats.categoriesUsed = categoriesUsed
+
+        chartLabels.value = expensesPerCategory.map(item => item.name)
+        chartValues.value = expensesPerCategory.map(item => item.expenses_sum_amount)
+
+        recentExpenses.value = recent
+    } catch (error) {
+        console.error(error)
+    }
+})
 </script>
 
 <template>
@@ -13,17 +45,16 @@ import StatCard from '@/components/StatCard.vue'
 
         <!-- Cards -->
         <div class="grid gap-8 lg:grid-cols-3">
-            <StatCard title="Total Expenses" value="1200" icon="pi-cart-arrow-down" iconColor="red" />
-            <StatCard title="This Month" value="300" icon="pi-calendar" iconColor="yellow" />
-            <StatCard title="Categories" value="5" icon="pi-list" iconColor="green" />
+            <StatCard title="Total Expenses" :value="stats.totalExpenses" icon="pi-cart-arrow-down" iconColor="red" />
+            <StatCard title="This Month" :value="stats.monthlyExpenses" icon="pi-calendar" iconColor="yellow" />
+            <StatCard title="Categories" :value="stats.categoriesUsed" icon="pi-list" iconColor="green" />
         </div>
 
         <!-- Chart -->
         <div class="bg-white flex flex-col gap-8 px-8 py-4 shadow-lg">
             <h3 class="text-xl">Expenses Breakdown</h3>
             <div class="flex items-center justify-evenly">
-                <!-- <canvas id="expenseChart"></canvas> -->
-                <DoughnutChart />
+                <DoughnutChart :labels="chartLabels" :data="chartValues" />
             </div>
         </div>
 
@@ -36,7 +67,7 @@ import StatCard from '@/components/StatCard.vue'
                     <tr>
                         <th class="p-4 px-2 border-b border-slate-300 bg-slate-50">
                             <p class="block text-sm font-normal leading-none text-slate-500">
-
+                                #
                             </p>
                         </th>
                         <th class="p-4 border-b border-slate-300 bg-slate-50">
@@ -57,54 +88,21 @@ import StatCard from '@/components/StatCard.vue'
                     </tr>
                 </thead>
                 <tbody>
-                    <tr class="hover:bg-slate-50 border-b border-slate-200 text-center">
+                    <tr v-for="(expense, index) in recentExpenses" :key="index"
+                        class="hover:bg-slate-50 border-b border-slate-200 text-center">
                         <td class="px-2 py-5">
                             <p class="block font-semibold text-sm">
-                                <i class="fa fa-circle text-indigo-800"></i>
+                                <i class="pi pi-circle-fill text-indigo-800"></i>
                             </p>
                         </td>
                         <td class="p-4 py-5">
-                            <p class="block text-sm text-slate-800">Food</p>
+                            <p class="block text-sm text-slate-800">{{ expense.category?.name }}</p>
                         </td>
                         <td class="p-4 py-5">
-                            <p class="block text-sm text-slate-800">$1,200.00</p>
+                            <p class="block text-sm text-slate-800">${{ expense.amount }}</p>
                         </td>
                         <td class="p-4 py-5">
-                            <p class="block text-sm text-slate-800">2024-08-01</p>
-                        </td>
-                    </tr>
-
-                    <tr class="hover:bg-slate-50 border-b border-slate-200 text-center">
-                        <td class="px-2 py-5">
-                            <p class="block font-semibold text-sm">
-                                <i class="fa fa-circle text-indigo-800"></i>
-                            </p>
-                        </td>
-                        <td class="p-4 py-5">
-                            <p class="block text-sm text-slate-800">Food</p>
-                        </td>
-                        <td class="p-4 py-5">
-                            <p class="block text-sm text-slate-800">$1,200.00</p>
-                        </td>
-                        <td class="p-4 py-5">
-                            <p class="block text-sm text-slate-800">2024-08-01</p>
-                        </td>
-                    </tr>
-
-                    <tr class="hover:bg-slate-50 border-b border-slate-200 text-center">
-                        <td class="px-2 py-5">
-                            <p class="block font-semibold text-sm">
-                                <i class="fa fa-circle text-indigo-800"></i>
-                            </p>
-                        </td>
-                        <td class="p-4 py-5">
-                            <p class="block text-sm text-slate-800">Food</p>
-                        </td>
-                        <td class="p-4 py-5">
-                            <p class="block text-sm text-slate-800">$1,200.00</p>
-                        </td>
-                        <td class="p-4 py-5">
-                            <p class="block text-sm text-slate-800">2024-08-01</p>
+                            <p class="block text-sm text-slate-800">{{ expense.date }}</p>
                         </td>
                     </tr>
                 </tbody>

@@ -52,8 +52,6 @@ const handleLogin = async () => {
         await api.get('/sanctum/csrf-cookie')
         await api.post('/login', formData)
 
-        authStore.user = await authStore.getAuthenticatedUser()
-
         localStorage.setItem('success_message', 'Login successful');
 
         router.push({ name: 'dashboard' })

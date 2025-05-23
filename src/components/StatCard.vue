@@ -3,7 +3,7 @@ import { defineProps } from 'vue'
 
 const { title, value, icon, iconColor } = defineProps({
     title: String,
-    value: String,
+    value: Number,
     icon: String,
     iconColor: String,
 })
