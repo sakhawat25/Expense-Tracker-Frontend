@@ -45,8 +45,9 @@ onMounted(async () => {
 
         <!-- Cards -->
         <div class="grid gap-8 lg:grid-cols-3">
-            <StatCard title="Total Expenses" :value="stats.totalExpenses" icon="pi-cart-arrow-down" iconColor="red" />
-            <StatCard title="This Month" :value="stats.monthlyExpenses" icon="pi-calendar" iconColor="yellow" />
+            <StatCard title="Total Expenses" :value="`$${stats.totalExpenses}`" icon="pi-cart-arrow-down"
+                iconColor="red" />
+            <StatCard title="This Month" :value="`$${stats.monthlyExpenses}`" icon="pi-calendar" iconColor="yellow" />
             <StatCard title="Categories" :value="stats.categoriesUsed" icon="pi-list" iconColor="green" />
         </div>
 
@@ -62,34 +63,37 @@ onMounted(async () => {
         <div class="bg-white flex flex-col gap-8 px-8 py-4 shadow-lg">
             <h3 class="text-xl">Recent Expenses</h3>
 
-            <table>
-                <thead>
+            <table class="w-full table-auto border-collapse text-sm">
+                <thead class="bg-indigo-600 text-white">
                     <tr>
-                        <th class="p-4 px-2 border-b border-slate-300 bg-slate-50">
-                            <p class="block text-sm font-normal leading-none text-slate-500">
+                        <th class="p-4 px-2">
+                            <p class="block text-sm font-normal leading-none">
                                 #
                             </p>
                         </th>
-                        <th class="p-4 border-b border-slate-300 bg-slate-50">
-                            <p class="block text-sm font-normal leading-none text-slate-500">
+                        <th class="p-4">
+                            <p class="block text-sm font-normal leading-none">
                                 Category
                             </p>
                         </th>
-                        <th class="p-4 border-b border-slate-300 bg-slate-50">
-                            <p class="block text-sm font-normal leading-none text-slate-500">
+                        <th class="p-4">
+                            <p class="block text-sm font-normal leading-none">
                                 Amount
                             </p>
                         </th>
-                        <th class="p-4 border-b border-slate-300 bg-slate-50">
-                            <p class="block text-sm font-normal leading-none text-slate-500">
+                        <th class="p-4">
+                            <p class="block text-sm font-normal leading-none">
                                 Date
                             </p>
                         </th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr v-for="(expense, index) in recentExpenses" :key="index"
-                        class="hover:bg-slate-50 border-b border-slate-200 text-center">
+                    <tr v-for="(expense, index) in recentExpenses" :key="index" :class="['hover:bg-slate-50 border-b border-slate-200 text-center',
+                        index % 2 === 0
+                            ? 'bg-white'
+                            : 'bg-slate-50'
+                    ]">
                         <td class="px-2 py-5">
                             <p class="block font-semibold text-sm">
                                 <i class="pi pi-circle-fill text-indigo-800"></i>
@@ -99,7 +103,7 @@ onMounted(async () => {
                             <p class="block text-sm text-slate-800">{{ expense.category?.name }}</p>
                         </td>
                         <td class="p-4 py-5">
-                            <p class="block text-sm text-slate-800">${{ expense.amount }}</p>
+                            <p class="block text-sm text-red-700">- ${{ expense.amount }}</p>
                         </td>
                         <td class="p-4 py-5">
                             <p class="block text-sm text-slate-800">{{ expense.date }}</p>

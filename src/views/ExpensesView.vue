@@ -191,25 +191,25 @@ onUnmounted(() => {
 
         <!-- Table -->
         <table class="shadow-lg">
-            <thead>
+            <thead class="bg-indigo-600 text-white">
                 <tr>
-                    <th class="p-4 px-2 border-b border-slate-300 bg-slate-50">
-                        <p class="block text-sm font-normal leading-none text-slate-500">
+                    <th class="p-4 px-2">
+                        <p class="block text-sm font-normal leading-none">
                             Date
                         </p>
                     </th>
-                    <th class="p-4 border-b border-slate-300 bg-slate-50">
-                        <p class="block text-sm font-normal leading-none text-slate-500">
+                    <th class="p-4">
+                        <p class="block text-sm font-normal leading-none">
                             Category
                         </p>
                     </th>
-                    <th class="p-4 border-b border-slate-300 bg-slate-50">
-                        <p class="block text-sm font-normal leading-none text-slate-500">
+                    <th class="p-4">
+                        <p class="block text-sm font-normal leading-none">
                             Amount
                         </p>
                     </th>
-                    <th class="p-4 border-b border-slate-300 bg-slate-50">
-                        <p class="block text-sm font-normal leading-none text-slate-500">
+                    <th class="p-4">
+                        <p class="block text-sm font-normal leading-none">
                             Actions
                         </p>
                     </th>
@@ -221,8 +221,11 @@ onUnmounted(() => {
                         No records available
                     </td>
                 </tr>
-                <tr v-for="expense in expenses?.data" :key="expense.id"
-                    class="hover:bg-slate-50 border-b border-slate-200 text-center">
+                <tr v-for="(expense, index) in expenses?.data" :key="index" :class="['hover:bg-slate-50 border-b border-slate-200 text-center',
+                    index % 2 === 0
+                        ? 'bg-white'
+                        : 'bg-slate-50'
+                ]">
                     <td class="p-4 py-5">
                         <p class="block text-sm text-slate-800">{{ expense.date }}</p>
                     </td>
@@ -230,7 +233,7 @@ onUnmounted(() => {
                         <p class="block text-sm text-slate-800">{{ expense.category?.name ?? 'NA' }}</p>
                     </td>
                     <td class="p-4 py-5">
-                        <p class="block text-sm text-slate-800">- ${{ expense.amount }}</p>
+                        <p class="block text-sm text-red-700">- ${{ expense.amount }}</p>
                     </td>
                     <td class="flex gap-3 items-center justify-center p-4 py-5">
                         <button @click="() => { handleEditExpense(expense.id) }"

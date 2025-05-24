@@ -18,6 +18,7 @@ const chartData = computed(() => ({
         {
             backgroundColor: ['#EB9100', '#06DC5F', '#0092F4', '#9933C1', '#CC1A06'],
             data: props.data,
+            hoverOffset: 4,
         }
     ]
 }))

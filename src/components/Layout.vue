@@ -87,10 +87,10 @@ onMounted(() => {
 
                 <div id="profileMenu"
                     class="hidden absolute top-20 bg-white flex flex-col items-center gap-2 p-4 shadow-lg overflow-hidden transition-all duration-300">
-                    <a href="#" class="flex items-center gap-4 px-4 py-2 text-sm hover:bg-indigo-800 hover:text-white">
+                    <!-- <a href="#" class="flex items-center gap-4 px-4 py-2 text-sm hover:bg-indigo-800 hover:text-white">
                         <i class="pi pi-user"></i>
                         <span>Profile</span>
-                    </a>
+                    </a> -->
 
                     <button @click="handleLogout"
                         class="cursor-pointer flex items-center gap-4 px-4 py-2 text-sm hover:bg-indigo-800 hover:text-white">
@@ -123,5 +123,6 @@ main {
     grid-template-rows: auto 1fr;
     gap: 1rem;
     overflow-x: scroll;
+    scrollbar-width: none;
 }
 </style>

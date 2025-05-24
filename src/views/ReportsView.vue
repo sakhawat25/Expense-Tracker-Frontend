@@ -167,7 +167,7 @@ onMounted(async () => {
                             <p class="block text-sm text-slate-800">{{ expense.category?.name }}</p>
                         </td>
                         <td class="p-4 py-5">
-                            <p class="block text-sm text-slate-800">${{ expense.amount }}</p>
+                            <p class="block text-sm text-red-700">- ${{ expense.amount }}</p>
                         </td>
                         <td class="p-4 py-5">
                             <p class="block text-sm text-slate-800">{{ expense.date }}</p>
